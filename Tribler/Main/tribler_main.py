@@ -448,19 +448,24 @@ class ABCApp(object):
             dispersy.define_auto_load(ChannelCommunity, session.dispersy_member, load=True, kargs=default_kwargs)
             dispersy.define_auto_load(PreviewChannelCommunity, session.dispersy_member, kargs=default_kwargs)
 
-            keypair = dispersy.crypto.generate_key(u"curve25519")
-            dispersy_member = dispersy.get_member(private_key=dispersy.crypto.key_to_bin(keypair),)
             settings = TunnelSettings(session.get_install_dir(), tribler_session=session)
             tunnel_kwargs = {'tribler_session': session, 'settings': settings}
 
             if self.sconfig.get_enable_multichain():
                 # Start the multichain community and hook in the multichain scheduler.
-                multichain = dispersy.define_auto_load(MultiChainCommunity, dispersy_member, load=True)[0]
+                multichain = dispersy.define_auto_load(MultiChainCommunity, sessiondispersy_member, load=True)[0]
 
-            # The multichain community MUST be auto_loaded before the tunnel community,
-            #  because it must be unloaded after the tunnel, so that the tunnel closures can be signed
-            self.tunnel_community = dispersy.define_auto_load(HiddenTunnelCommunity, dispersy_member, load=True,
-                                                              kargs=tunnel_kwargs)[0]
+                # The multichain community MUST be auto_loaded before the tunnel community,
+                #  because it must be unloaded after the tunnel, so that the tunnel closures can be signed
+                self.tunnel_community = dispersy.define_auto_load(HiddenTunnelCommunity, session.dispersy_member, load=True,
+                                                                  kargs=tunnel_kwargs)[0]
+            else:
+                keypair = dispersy.crypto.generate_key(u"curve25519")
+                dispersy_member = dispersy.get_member(private_key=dispersy.crypto.key_to_bin(keypair),)
+                
+                # If multichain is not enabled, use clean identity
+                self.tunnel_community = dispersy.define_auto_load(HiddenTunnelCommunity, dispersy_member, load=True,
+                                                                  kargs=tunnel_kwargs)[0]
 
             session.set_anon_proxy_settings(2, ("127.0.0.1", session.get_tunnel_community_socks5_listen_ports()))
 
